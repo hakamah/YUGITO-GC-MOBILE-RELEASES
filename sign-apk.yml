@@ -1,0 +1,90 @@
+name: Sign YUGITO GC APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, ex: GC-Mobile-2.1.4"
+        required: true
+        type: string
+      asset:
+        description: "APK filename, ex: YUGITO_GC_Mobile_Update_2.1.4.apk"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download APK from GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          ASSET: ${{ inputs.asset }}
+        run: |
+          mkdir -p work
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "$ASSET" \
+            --dir work
+
+          test -f "work/$ASSET"
+          cp "work/$ASSET" work/input.apk
+
+      - name: Restore YUGITO GC release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > work/YUGITO_GC_RELEASE.keystore
+
+      - name: Find Android build tools
+        run: |
+          BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+          echo "BUILD_TOOLS=$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION" >> "$GITHUB_ENV"
+          echo "Using Android build-tools $BUILD_TOOLS_VERSION"
+
+      - name: Zipalign APK
+        run: |
+          "$BUILD_TOOLS/zipalign" \
+            -f \
+            -p \
+            4 \
+            work/input.apk \
+            work/aligned.apk
+
+      - name: Sign APK with permanent YUGITO GC key
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks work/YUGITO_GC_RELEASE.keystore \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KS_PASS \
+            --key-pass env:KEY_PASS \
+            --out "work/${{ inputs.asset }}" \
+            work/aligned.apk
+
+      - name: Verify APK signature
+        run: |
+          "$BUILD_TOOLS/apksigner" verify \
+            --verbose \
+            --print-certs \
+            "work/${{ inputs.asset }}"
+
+      - name: Show SHA256
+        run: |
+          sha256sum "work/${{ inputs.asset }}"
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: YUGITO-GC-signed-${{ inputs.tag }}
+          path: work/${{ inputs.asset }}
+          if-no-files-found: error
+          retention-days: 30
