@@ -47,4 +47,10 @@ jobs:
           }
           JAVA
           javac /tmp/SignPayload.java
-          java -cp /tmp SignPayload
+          java -cp /tmp SignPayload | tee /tmp/sig.txt
+      - name: Upload exact signing output
+        uses: actions/upload-artifact@v4
+        with:
+          name: hiruzen-r3-signature
+          path: /tmp/sig.txt
+          retention-days: 1
