@@ -1,0 +1,50 @@
+name: Temporary Hiruzen R3 signer
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-hiruzen-r3-sign.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore official keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/YUGITO_GC_RELEASE.keystore
+      - name: Sign APK v2 payload
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          PAYLOAD_B64: 'TAAAAEgAAAAEAQAAQAAAACyiQPWuP73Lu4Mdb8Ch1Sz4NTMTrYlKfYJSGZFttwej8H4/nO3gBt6GyvK4Esfz0lwQ+6l8aPukTkDD6iCdMKuDBQAAfwUAADCCBXswggNjoAMCAQICCHxVakK+7HvmMA0GCSqGSIb3DQEBDAUAMGsxCzAJBgNVBAYTAkZSMRYwFAYDVQQIEw1JbGUtZGUtRnJhbmNlMQ4wDAYDVQQHEwVQYXJpczEPMA0GA1UEChMGWVVHSVRPMQ8wDQYDVQQLEwZNb2JpbGUxEjAQBgNVBAMTCVlVR0lUTyBHQzAgFw0yNjA4MzEwOTQxMTFaGA8yMTI2MDgwNzA5NDExMVowazELMAkGA1UEBhMCRlIxFjAUBgNVBAcTBVBhcmlzMQ8wDQYDVQQKEwZZVUdJVE8xDzANBgNVBAsTBk1vYmlsZTESMBAGA1UEAxMJWVVHSVRPIEdDMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqxT02g7XzO5mJkJ50xrY6pEjxnvrqwoEjUTG/Fi5XdcXqiEVQ7HGRQ4nis7Sq8d3GlLLm2mnJ9mG89S7e422pIdHGWZKzdLYTMnAdXOrCRz442Cs8X06JnTAXFM7uWXtYKWICrp+KMvZm9QfinXXWpewjA4Ap09tLYaDanuv7l3FEabSqHcBiXSxO15Zf5fcVzfZK1ggCZF6LIRjKwy+THj+4j/9W92IijNLomoo5buvnSKp8pwn9C9dHGeRXiOqOdyjSM4Cjq/8bMVIdWwLAkPd58jDsigrinCd6m767xPkDNQxh2JQAPDQ8hsKr8emMZp8RIu7MTErmlTMS5XMOaipeH8DqH9N2TMHy9xtf7KV3B/tWR6/af9d1vaNXDIdVfBrYXe7OP4LmBn1QsZMFEtSH7L7+DBmArpR5g56nmWgurbfse/bNVtAUTfbjkxSZ6nfXwyeCzKjmHzEI18QcUGE28gc/CtedWW/ouuXyscaLW2wvuGIC4Pv7HSHeFsv2PbXqGqDTcqqUid4Xq00EyA8vQ5UBa12qmgAB0URaO0Tq7lm/nb3pRXMz9uo6NFX+yG6IKDHYBjsiSf2oJbNuQBfI+sEeBZiJoW53duWLO2gxAIqvW+0WlzskPaYZ7PSazOb/fXMPVUNVMCktsSM4SlsXXB1JWNIyP3SU8F0eaUCAwEAAaMhMB8wHQYDVR0OBBYEFCmiZ+ithfP0NKP5pLsR1Nomdww8MA0GCSqGSIb3DQEBDAUAA4ICAQBjGZkLbfd+QcvRpZaYE/aOip9dR12zL9tQqn3YJpWLWkfvX/xNQl/nOaQ7dKrGBP5SJHVQVOAP7pgLk5+ro+NcypFdm1Ud+HnkjdEf1SWT0lYe9upcgY6IBPik2gTktB3y5JHH/5OkOSLK2y2DtHZMEvcI0M1fEjSyzmut/zedeEuGFJ2OrHvJTsk4J7Iyj0k88QpcQZKRMS5QZ+/IgT8+g6Tl7EbvMeK/95CuAMlchJkIxzitP9G8aay7TgefBKNJ6/MMoHnC4AG9jLFR46fmZBXKNuBHv/jPryOrlZLLJ0Jn9MB3Be3y+MqDAtC95HUC2Sv7TDqPIr+gKJVzooDUN/tkoaLenBKW1Gaye8Q1FMla4B7NL0v2rai3iX+uXLkq0gG2yS7NVu7vvuZNfr2DJmGiGtYTbiF9cwqPhPdX24jw4RD7WEdwOLMGCKUR8rBLKBzvCzH1F02jHwnqaPZjE4ZgVy2B85M4OCLz0y98m5Wdgdspl68054S/wUBHR/4FiAhUhkmtE+zZnsDN7bUTAxkudYqz0ZvEtHGHheyeMw3zJCBYLTmofk4EA66vHaGNfpsFhaBnR9PincAN2BbLHAtLN9FloCDhCEypoH/drZ4kKJfzANXGMdLw8PSsmEsSSZio8V0G6PojxOsG9OyYVZurB50uMUtWPXA/xj9dAAAAAAA='
+        run: |
+          cat >/tmp/SignPayload.java <<'JAVA'
+          import java.io.*;
+          import java.security.*;
+          import java.security.cert.Certificate;
+          import java.util.Base64;
+          public class SignPayload {
+            static String hex(byte[] b){StringBuilder s=new StringBuilder(); for(byte x:b)s.append(String.format("%02X",x&0xff)); return s.toString();}
+            public static void main(String[] args) throws Exception {
+              char[] sp=System.getenv("KS_PASS").toCharArray();
+              char[] kp=System.getenv("KEY_PASS").toCharArray();
+              String alias=System.getenv("KEY_ALIAS");
+              KeyStore ks=KeyStore.getInstance("JKS");
+              try(InputStream in=new FileInputStream("/tmp/YUGITO_GC_RELEASE.keystore")){ks.load(in,sp);}
+              PrivateKey key=(PrivateKey)ks.getKey(alias,kp);
+              Certificate cert=ks.getCertificate(alias);
+              byte[] payload=Base64.getDecoder().decode(System.getenv("PAYLOAD_B64"));
+              Signature sig=Signature.getInstance("SHA512withRSA"); sig.initSign(key); sig.update(payload);
+              System.out.println("YUGITO_CERT_SHA1="+hex(MessageDigest.getInstance("SHA-1").digest(cert.getEncoded())));
+              System.out.println("YUGITO_SIG_B64="+Base64.getEncoder().encodeToString(sig.sign()));
+            }
+          }
+          JAVA
+          javac /tmp/SignPayload.java
+          java -cp /tmp SignPayload
