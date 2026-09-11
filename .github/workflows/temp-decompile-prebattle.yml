@@ -16,25 +16,25 @@ jobs:
         run: |
           curl -L -o /tmp/gdre.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
           unzip -q /tmp/gdre.zip -d /tmp/gdre
-          find /tmp/gdre -maxdepth 2 -type f -print
           chmod +x /tmp/gdre/gdre_tools.x86_64 || true
       - name: Download official YUGITO 2.1.4 APK
         run: |
           curl -L -o /tmp/yugito.apk https://github.com/hakamah/YUGITO-GC-MOBILE-RELEASES/releases/download/GC-Mobile-2.1.4/YUGITO_GC_Mobile_Update_2.1.4.apk
-      - name: Recover project
+      - name: Recover project ignoring known sparse gaps
         run: |
           BIN=$(find /tmp/gdre -type f -name 'gdre_tools*' | head -1)
           chmod +x "$BIN"
-          "$BIN" --headless --recover=/tmp/yugito.apk --output-dir=/tmp/recovered || true
-          find /tmp/recovered -type f | sort | sed -n '1,200p'
+          "$BIN" --headless --recover=/tmp/yugito.apk --output-dir=/tmp/recovered --ignore-checksum-errors || true
+          find /tmp/recovered -type f | sort | sed -n '1,260p'
       - name: Collect PreBattle source
         run: |
           mkdir -p /tmp/out
-          find /tmp/recovered -type f \( -iname 'PreBattle.gd' -o -iname '*prebattle*' \) -print -exec cp -v {} /tmp/out/ \; || true
-          grep -RniE 'shif|pierre|feuille|ciseaux|rock|paper|scissor|egal|égalité' /tmp/recovered > /tmp/out/shifumi_matches.txt || true
+          find /tmp/recovered -type f \( -iname 'PreBattle.gd' -o -iname 'PreBattle.gdc' -o -iname '*prebattle*' \) -print -exec cp -v {} /tmp/out/ \; || true
+          grep -RniE 'shif|pierre|feuille|ciseaux|rock|paper|scissor|egal|égalité|tie|draw' /tmp/recovered > /tmp/out/shifumi_matches.txt || true
+          cp /tmp/recovered/gdre_export.log /tmp/out/ 2>/dev/null || true
       - name: Upload recovered source
         uses: actions/upload-artifact@v4
         with:
-          name: prebattle-recovered
+          name: prebattle-recovered-v2
           path: /tmp/out
           retention-days: 1
