@@ -1,0 +1,32 @@
+name: Temporary Shifumi V3 source recovery
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-shifumi-v3-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download GDRETools
+        run: |
+          curl -L -o /tmp/gdre.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
+          unzip -q /tmp/gdre.zip -d /tmp/gdre
+          chmod +x /tmp/gdre/gdre_tools.x86_64
+      - name: Recover base PreBattle source
+        run: |
+          curl -L -o /tmp/yugito.apk https://github.com/hakamah/YUGITO-GC-MOBILE-RELEASES/releases/download/GC-Mobile-2.1.4/YUGITO_GC_Mobile_Update_2.1.4.apk
+          unzip -p /tmp/yugito.apk assets/scripts/PreBattle.gdc > /tmp/PreBattle.gdc
+          mkdir -p /tmp/src
+          /tmp/gdre/gdre_tools.x86_64 --headless --decompile=/tmp/PreBattle.gdc --bytecode=ebc36a7 --output=/tmp/src
+          test -s /tmp/src/PreBattle.gd
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: shifumi-v3-base-source
+          path: /tmp/src/PreBattle.gd
+          retention-days: 1
