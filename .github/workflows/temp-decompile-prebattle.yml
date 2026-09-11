@@ -16,25 +16,21 @@ jobs:
         run: |
           curl -L -o /tmp/gdre.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
           unzip -q /tmp/gdre.zip -d /tmp/gdre
-          chmod +x /tmp/gdre/gdre_tools.x86_64 || true
-      - name: Download official YUGITO 2.1.4 APK
+          chmod +x /tmp/gdre/gdre_tools.x86_64
+      - name: Download official YUGITO 2.1.4 APK and extract PreBattle
         run: |
           curl -L -o /tmp/yugito.apk https://github.com/hakamah/YUGITO-GC-MOBILE-RELEASES/releases/download/GC-Mobile-2.1.4/YUGITO_GC_Mobile_Update_2.1.4.apk
-      - name: Recover project ignoring known sparse gaps
-        run: |
-          BIN=$(find /tmp/gdre -type f -name 'gdre_tools*' | head -1)
-          chmod +x "$BIN"
-          "$BIN" --headless --recover=/tmp/yugito.apk --output-dir=/tmp/recovered --ignore-checksum-errors || true
-          find /tmp/recovered -type f | sort | sed -n '1,260p'
-      - name: Collect PreBattle source
+          unzip -p /tmp/yugito.apk assets/scripts/PreBattle.gdc > /tmp/PreBattle.gdc
+          ls -lh /tmp/PreBattle.gdc
+      - name: Directly decompile PreBattle
         run: |
           mkdir -p /tmp/out
-          find /tmp/recovered -type f \( -iname 'PreBattle.gd' -o -iname 'PreBattle.gdc' -o -iname '*prebattle*' \) -print -exec cp -v {} /tmp/out/ \; || true
-          grep -RniE 'shif|pierre|feuille|ciseaux|rock|paper|scissor|egal|égalité|tie|draw' /tmp/recovered > /tmp/out/shifumi_matches.txt || true
-          cp /tmp/recovered/gdre_export.log /tmp/out/ 2>/dev/null || true
-      - name: Upload recovered source
+          /tmp/gdre/gdre_tools.x86_64 --headless --decompile=/tmp/PreBattle.gdc --bytecode=ebc36a7 --output=/tmp/out || \
+          /tmp/gdre/gdre_tools.x86_64 --headless --decompile=/tmp/PreBattle.gdc --bytecode=4.5.0 --output=/tmp/out || true
+          find /tmp/out -maxdepth 2 -type f -print -exec sed -n '1,120p' {} \; || true
+      - name: Upload source
         uses: actions/upload-artifact@v4
         with:
-          name: prebattle-recovered-v2
+          name: prebattle-direct-source
           path: /tmp/out
           retention-days: 1
