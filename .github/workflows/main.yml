@@ -1,9 +1,16 @@
 name: Sign YUGITO GC APK
 
 on:
-  push:
-    paths:
-      - '.github/workflows/main.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, ex: GC-Mobile-2.1.4"
+        required: true
+        type: string
+      asset:
+        description: "APK filename, ex: YUGITO_GC_Mobile_Update_2.1.4.apk"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,55 +18,73 @@ permissions:
 jobs:
   sign:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Download APK from GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          ASSET: ${{ inputs.asset }}
+        run: |
+          mkdir -p work
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "$ASSET" \
+            --dir work
+
+          test -f "work/$ASSET"
+          cp "work/$ASSET" work/input.apk
+
       - name: Restore YUGITO GC release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          mkdir -p work
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > work/YUGITO_GC_RELEASE.keystore
 
-      - name: Sign Battle V3 digest with permanent YUGITO key
+      - name: Find Android build tools
+        run: |
+          BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+          echo "BUILD_TOOLS=$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION" >> "$GITHUB_ENV"
+          echo "Using Android build-tools $BUILD_TOOLS_VERSION"
+
+      - name: Zipalign APK
+        run: |
+          "$BUILD_TOOLS/zipalign" \
+            -f \
+            -p \
+            4 \
+            work/input.apk \
+            work/aligned.apk
+
+      - name: Sign APK with permanent YUGITO GC key
         env:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          CONTENT_DIGEST_HEX: 2e93ca2a1f1da69305b29011aae9a181dc5e2d555f068184101e1144813a1e880d9120a537e5693a53e43204ecd88badf9d48c140213c1e1bf4bce84cece103d
         run: |
-          cat > work/SignDigest.java <<'JAVA'
-          import java.io.*;
-          import java.nio.*;
-          import java.nio.file.*;
-          import java.security.*;
-          import java.security.cert.Certificate;
-          public class SignDigest {
-            static byte[] u32(int v){ return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(v).array(); }
-            static byte[] concat(byte[]... a)throws Exception{ ByteArrayOutputStream o=new ByteArrayOutputStream(); for(byte[] x:a)o.write(x); return o.toByteArray(); }
-            static byte[] lp(byte[] b)throws Exception{ return concat(u32(b.length),b); }
-            static byte[] hex(String s){ byte[] o=new byte[s.length()/2]; for(int i=0;i<o.length;i++)o[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16); return o; }
-            static KeyStore load(char[] p)throws Exception{ Exception last=null; for(String t:new String[]{"JKS","PKCS12"}) try(InputStream in=Files.newInputStream(Paths.get("work/YUGITO_GC_RELEASE.keystore"))){ KeyStore k=KeyStore.getInstance(t); k.load(in,p); return k; } catch(Exception e){last=e;} throw last; }
-            public static void main(String[] z)throws Exception{
-              char[] kp=System.getenv("KS_PASS").toCharArray(), pp=System.getenv("KEY_PASS").toCharArray(); String a=System.getenv("KEY_ALIAS");
-              KeyStore ks=load(kp); PrivateKey key=(PrivateKey)ks.getKey(a,pp); Certificate cert=ks.getCertificate(a); if(key==null||cert==null)throw new RuntimeException("key missing");
-              byte[] certDer=cert.getEncoded(), pubDer=cert.getPublicKey().getEncoded(), digest=hex(System.getenv("CONTENT_DIGEST_HEX")); int ALG=0x0104;
-              byte[] rec=concat(u32(ALG),lp(digest)); byte[] signedData=concat(lp(lp(rec)),lp(lp(certDer)),lp(new byte[0]));
-              Signature s=Signature.getInstance("SHA512withRSA"); s.initSign(key); s.update(signedData); byte[] sig=s.sign();
-              Files.write(Paths.get("work/signed_data.bin"),signedData); Files.write(Paths.get("work/signature.bin"),sig); Files.write(Paths.get("work/cert.der"),certDer); Files.write(Paths.get("work/pub.der"),pubDer);
-              MessageDigest m=MessageDigest.getInstance("SHA-1"); StringBuilder h=new StringBuilder(); for(byte b:m.digest(certDer))h.append(String.format("%02X",b)); System.out.println("CERT_SHA1="+h);
-            }
-          }
-          JAVA
-          javac work/SignDigest.java
-          java -cp work SignDigest
-          test -s work/signed_data.bin && test -s work/signature.bin && test -s work/cert.der && test -s work/pub.der
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks work/YUGITO_GC_RELEASE.keystore \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KS_PASS \
+            --key-pass env:KEY_PASS \
+            --out "work/${{ inputs.asset }}" \
+            work/aligned.apk
 
-      - name: Upload signing material
+      - name: Verify APK signature
+        run: |
+          "$BUILD_TOOLS/apksigner" verify \
+            --verbose \
+            --print-certs \
+            "work/${{ inputs.asset }}"
+
+      - name: Show SHA256
+        run: |
+          sha256sum "work/${{ inputs.asset }}"
+
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: battlev3-signing-material
-          path: |
-            work/signed_data.bin
-            work/signature.bin
-            work/cert.der
-            work/pub.der
-          retention-days: 1
+          name: YUGITO-GC-signed-${{ inputs.tag }}
+          path: work/${{ inputs.asset }}
+          if-no-files-found: error
+          retention-days: 30
