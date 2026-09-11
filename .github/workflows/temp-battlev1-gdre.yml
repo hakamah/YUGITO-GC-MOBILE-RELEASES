@@ -1,0 +1,26 @@
+name: Temporary Battle V1 GDRE tool
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-battlev1-gdre.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  tool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download GDRETools
+        run: |
+          curl -L -o /tmp/gdre.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
+          unzip -q /tmp/gdre.zip -d /tmp/gdre
+          chmod +x /tmp/gdre/gdre_tools.x86_64
+          /tmp/gdre/gdre_tools.x86_64 --version || true
+      - name: Upload tool
+        uses: actions/upload-artifact@v4
+        with:
+          name: battlev1-gdre-tool
+          path: /tmp/gdre/gdre_tools.x86_64
+          retention-days: 1
