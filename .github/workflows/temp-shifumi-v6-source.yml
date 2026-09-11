@@ -1,0 +1,41 @@
+name: Temporary Shifumi V6 source recovery
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-shifumi-v6-source.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download V5 PreBattle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shifumi-v5-prebattle
+          path: /tmp/v5
+          github-token: ${{ github.token }}
+          repository: hakamah/YUGITO-GC-MOBILE-RELEASES
+          run-id: 34650908907
+      - name: Download GDRETools
+        run: |
+          curl -L -o /tmp/gdre.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
+          unzip -q /tmp/gdre.zip -d /tmp/gdre
+          chmod +x /tmp/gdre/gdre_tools.x86_64
+      - name: Decompile V5 source
+        run: |
+          cp /tmp/v5/PreBattle.gdc /tmp/PreBattle.gdc
+          mkdir -p /tmp/src
+          /tmp/gdre/gdre_tools.x86_64 --headless --decompile=/tmp/PreBattle.gdc --bytecode=ebc36a7 --output=/tmp/src
+          test -s /tmp/src/PreBattle.gd
+          grep -nE '_choose_rps|_draw_rps_wait|_draw_rps_result|rps_player_choice|rps_revealing|VERROU|ATTENTE|_rps_choice_button|_animate_rps_choice_card' /tmp/src/PreBattle.gd | head -180 || true
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: shifumi-v6-current-source
+          path: /tmp/src/PreBattle.gd
+          retention-days: 1
