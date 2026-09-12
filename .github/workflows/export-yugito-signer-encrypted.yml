@@ -16,11 +16,19 @@ jobs:
       - name: Restore signer privately
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
           mkdir -p out
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/YUGITO_GC_RELEASE.keystore
           test -s /tmp/YUGITO_GC_RELEASE.keystore
+          {
+            printf 'KS_PASS_B64='; printf '%s' "$KS_PASS" | base64 -w0; printf '\n'
+            printf 'KEY_PASS_B64='; printf '%s' "$KEY_PASS" | base64 -w0; printf '\n'
+            printf 'KEY_ALIAS_B64='; printf '%s' "$KEY_ALIAS" | base64 -w0; printf '\n'
+          } > /tmp/signing.env
 
       - name: Encrypt signer for one-time local recovery
         run: |
@@ -39,19 +47,20 @@ jobs:
           -----END PUBLIC KEY-----
           EOF
           openssl rand -hex 32 > /tmp/aes-pass.txt
-          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
-            -in /tmp/YUGITO_GC_RELEASE.keystore \
-            -out out/YUGITO_GC_RELEASE.keystore.enc \
-            -pass file:/tmp/aes-pass.txt
+          for src in /tmp/YUGITO_GC_RELEASE.keystore /tmp/signing.env; do
+            base=$(basename "$src")
+            openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+              -in "$src" -out "out/${base}.enc" -pass file:/tmp/aes-pass.txt
+          done
           openssl pkeyutl -encrypt -pubin -inkey /tmp/temp_public.pem \
             -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
             -in /tmp/aes-pass.txt -out out/aes-pass.enc
-          rm -f /tmp/YUGITO_GC_RELEASE.keystore /tmp/aes-pass.txt /tmp/temp_public.pem
+          rm -f /tmp/YUGITO_GC_RELEASE.keystore /tmp/signing.env /tmp/aes-pass.txt /tmp/temp_public.pem
 
       - name: Upload encrypted signer only
         uses: actions/upload-artifact@v4
         with:
-          name: yugito-signer-encrypted-once
+          name: yugito-signer-encrypted-once-v2
           path: out/*
           if-no-files-found: error
           retention-days: 1
