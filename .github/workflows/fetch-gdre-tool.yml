@@ -1,0 +1,29 @@
+name: Temporary GDRE Linux tool fetch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fetch-gdre-tool.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-tool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download GDRE Tools Linux
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 \
+            -o GDRE_tools-v2.6.4-linux.zip \
+            https://github.com/GDRETools/gdsdecomp/releases/download/v2.6.4/GDRE_tools-v2.6.4-linux.zip
+          test -s GDRE_tools-v2.6.4-linux.zip
+      - name: Upload tool archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdre-tools-linux-v2.6.4
+          path: GDRE_tools-v2.6.4-linux.zip
+          if-no-files-found: error
+          retention-days: 1
