@@ -1,0 +1,57 @@
+name: Temporary encrypted YUGITO signer export
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/export-yugito-signer-encrypted.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export-encrypted:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore signer privately
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/YUGITO_GC_RELEASE.keystore
+          test -s /tmp/YUGITO_GC_RELEASE.keystore
+
+      - name: Encrypt signer for one-time local recovery
+        run: |
+          set -euo pipefail
+          cat > /tmp/temp_public.pem <<'EOF'
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAvYPvdJDNF5PdEMVQlHtn
+          8e1/rJPuVFEIBGo8tngpMhz8a/mGIvFSnGSYi6G0uSN5IOHcjDGlPbNBESvbZqEo
+          yPA2sUvCQa7+V7MvvxjUAzt+VNNDb3lId/wXrpsxhr4j4zaCVHgYDRKmjz9efcQC
+          jg2aYlR/Y20Kp/bQGzKgDbr2Sldhu/2a7Wkt30dSchNJq7Gfy8S3oPIG4HmZM1pu
+          HmDFcS0fS1rCAZ/51Ey5ZVwgPyJkoIDsUKKfK6By7l67nXzVQlPAtm34kVK7132U
+          F+pGeW284/XVLFvo3vHHlcOU1hIclTcckEjevaqqoo2TzXXso9jn/78sUGcgb2GV
+          OHTnOTrjrTgX+XPdqxuEPIpO+UMwZNf2k9SLazF2cClXhJkHvP5I84yE7NWSOCme
+          6y0vT4lncDYuy0+HeKMnbfJk/KV3cIsABZRWdxzSXXu7cBBlRfIzLVnGWNr4amvc
+          Ma43HfnBbQtRkimJWrq/qvxjFQHlddTuJu50cf5qt3YDAgMBAAE=
+          -----END PUBLIC KEY-----
+          EOF
+          openssl rand -hex 32 > /tmp/aes-pass.txt
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in /tmp/YUGITO_GC_RELEASE.keystore \
+            -out out/YUGITO_GC_RELEASE.keystore.enc \
+            -pass file:/tmp/aes-pass.txt
+          openssl pkeyutl -encrypt -pubin -inkey /tmp/temp_public.pem \
+            -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
+            -in /tmp/aes-pass.txt -out out/aes-pass.enc
+          rm -f /tmp/YUGITO_GC_RELEASE.keystore /tmp/aes-pass.txt /tmp/temp_public.pem
+
+      - name: Upload encrypted signer only
+        uses: actions/upload-artifact@v4
+        with:
+          name: yugito-signer-encrypted-once
+          path: out/*
+          if-no-files-found: error
+          retention-days: 1
