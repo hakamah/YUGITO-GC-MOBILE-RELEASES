@@ -1,0 +1,64 @@
+name: Temporary Battle FX Core signer
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-battle-fxcore-sign.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore official YUGITO keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p /tmp/sign
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/sign/yugito.keystore
+      - name: Sign APK v2 content digest
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CONTENT_DIGEST_HEX: b640bd67ea561e3b64b3933b560981ad74842bfedca4cec3685acfa216f972ec3f20d65ed1bafdf3ed1dba8c6250e5cbf634cf528a97cabd6ac9601329d8eaad
+        run: |
+          cat > /tmp/sign/SignDigest.java <<'JAVA'
+          import java.io.*;
+          import java.nio.*;
+          import java.nio.file.*;
+          import java.security.*;
+          import java.security.cert.Certificate;
+          public class SignDigest {
+            static byte[] u32(int v){ return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(v).array(); }
+            static byte[] concat(byte[]... arrs)throws Exception{ ByteArrayOutputStream o=new ByteArrayOutputStream(); for(byte[] a:arrs)o.write(a); return o.toByteArray(); }
+            static byte[] lp(byte[] b)throws Exception{ return concat(u32(b.length),b); }
+            static byte[] hex(String s){ byte[] out=new byte[s.length()/2]; for(int i=0;i<out.length;i++)out[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16); return out; }
+            static KeyStore loadKS(char[] pass)throws Exception{ Exception last=null; for(String type:new String[]{"JKS","PKCS12"}){ try(InputStream in=Files.newInputStream(Paths.get("/tmp/sign/yugito.keystore"))){ KeyStore ks=KeyStore.getInstance(type); ks.load(in,pass); return ks; } catch(Exception e){ last=e; } } throw last; }
+            public static void main(String[] args)throws Exception{
+              char[] ksp=System.getenv("KS_PASS").toCharArray(); char[] keyp=System.getenv("KEY_PASS").toCharArray(); String alias=System.getenv("KEY_ALIAS");
+              byte[] digest=hex(System.getenv("CONTENT_DIGEST_HEX")); KeyStore ks=loadKS(ksp); PrivateKey key=(PrivateKey)ks.getKey(alias,keyp); Certificate cert=ks.getCertificate(alias); if(key==null||cert==null) throw new RuntimeException("Official key/certificate missing");
+              byte[] certDer=cert.getEncoded(), pubDer=cert.getPublicKey().getEncoded(); int ALG=0x0104;
+              byte[] digestRecord=concat(u32(ALG),lp(digest)); byte[] signedData=concat(lp(lp(digestRecord)),lp(lp(certDer)),lp(new byte[0]));
+              Signature signer=Signature.getInstance("SHA512withRSA"); signer.initSign(key); signer.update(signedData); byte[] sig=signer.sign();
+              Files.write(Paths.get("/tmp/sign/signed_data.bin"),signedData); Files.write(Paths.get("/tmp/sign/signature.bin"),sig); Files.write(Paths.get("/tmp/sign/cert.der"),certDer); Files.write(Paths.get("/tmp/sign/pub.der"),pubDer);
+              MessageDigest sha1=MessageDigest.getInstance("SHA-1"); StringBuilder sb=new StringBuilder(); for(byte b:sha1.digest(certDer)) sb.append(String.format("%02X",b)); System.out.println("CERT_SHA1="+sb);
+            }
+          }
+          JAVA
+          cd /tmp/sign
+          javac SignDigest.java
+          java SignDigest
+          test -s signed_data.bin && test -s signature.bin && test -s cert.der && test -s pub.der
+      - name: Upload signing material
+        uses: actions/upload-artifact@v4
+        with:
+          name: battle-fxcore-signing-material
+          path: |
+            /tmp/sign/signed_data.bin
+            /tmp/sign/signature.bin
+            /tmp/sign/cert.der
+            /tmp/sign/pub.der
+          retention-days: 1
