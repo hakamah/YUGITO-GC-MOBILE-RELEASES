@@ -1,0 +1,357 @@
+YUGITO GC — MÉMOIRE / ROADMAP BATTLE POLISH
+Date : 12 septembre 2026
+Statut : document de référence pour les prochains patchs Battle
+
+============================================================
+0. BUT DE CE DOCUMENT
+============================================================
+Ce fichier sert de mémoire de travail pour la refonte et le polish de la partie BATTLE de YUGITO GC mobile.
+
+Objectif général : passer d’un combat simplement fonctionnel à un combat propre, lisible, agréable, nerveux, cohérent visuellement et identifiable comme une vraie DA YUGITO.
+
+À éviter :
+- repartir de zéro ;
+- réintroduire les anciens projectiles/câbles ;
+- perdre les réglages validés ;
+- mélanger gameplay et polish sans ordre ;
+- casser l’auth Google / la signature officielle.
+
+============================================================
+1. BASE ACTUELLE VALIDÉE
+============================================================
+Build de référence :
+YUGITO_GC_2.1.5_R3_BATTLE_VNEXT3_CARD_ATTACK_NO_PROJECTILE_OFFICIAL_SIGNED_ANDROID16.apk
+
+Direction validée :
+- projectile supprimé ;
+- câble / grande ligne d’attaque supprimé ;
+- attaque portée principalement par la carte elle-même ;
+- mouvement plus ample que les premières versions ;
+- carte attaquante avance vers la cible ;
+- flash rouge conservé mais adouci ;
+- dégâts flottants conservés ;
+- retour de la carte après l’impact ;
+- logs Battle conservés ;
+- APK signée avec le certificat officiel YUGITO ;
+- Google ne doit pas être cassé par les futurs patchs.
+
+RÈGLE ABSOLUE : ne plus réintroduire un projectile universel pour les attaques normales.
+
+Le sentiment d’attaque doit venir en priorité de :
+- la carte ;
+- son mouvement ;
+- l’impact ;
+- la réaction de la cible ;
+- les dégâts affichés ;
+- le son / feedback.
+
+============================================================
+2. PHILOSOPHIE VISUELLE
+============================================================
+Une attaque doit se lire comme :
+1. Source identifiable
+2. Préparation
+3. Dash / mouvement
+4. Impact
+5. Réaction cible
+6. Dégâts / effet
+7. Retour
+8. Retour au calme
+
+Le joueur doit comprendre immédiatement :
+- qui attaque ;
+- qui est ciblé ;
+- ce qui vient de se produire ;
+- combien de PV/stat ont été gagnés ou perdus ;
+- si c’était une attaque normale, une spéciale, un passif, un poison, etc.
+
+Le combat doit rester nerveux, mais jamais brouillon.
+
+============================================================
+3. ROADMAP PRINCIPALE — 10 ÉTAPES
+============================================================
+
+ÉTAPE 1 — STABILISER LA CHORÉGRAPHIE D’ATTAQUE
+Priorité : CRITIQUE
+
+À obtenir :
+- mini préparation très courte ;
+- dash clair vers la vraie cible ;
+- mouvement fluide ;
+- aucun projectile ;
+- aucun changement cyan / fantôme ;
+- impact au bon moment ;
+- flash après l’impact ;
+- dégâts affichés après l’impact ;
+- retour rapide et propre.
+
+Réglages de départ :
+- préparation : 0,08 à 0,12 s ;
+- dash : 0,20 à 0,28 s ;
+- micro pause impact : 0,03 à 0,05 s ;
+- feedback cible : 0,18 à 0,25 s ;
+- retour : 0,14 à 0,20 s.
+
+Distance : assez longue pour être lisible, jamais assez longue pour recouvrir totalement la cible, direction réelle source → cible.
+
+Validation : l’attaque doit déjà être agréable à regarder même sans autre polish.
+
+------------------------------------------------------------
+ÉTAPE 2 — CIBLAGE / SÉLECTION ULTRA LISIBLE
+Priorité : TRÈS HAUTE
+
+- carte active clairement mise en avant ;
+- cibles possibles distinguées ;
+- cible choisie plus visible ;
+- cartes non concernées légèrement atténuées si nécessaire ;
+- aucun conflit avec le feedback de dégâts.
+
+Pendant la résolution d’une attaque, les états de sélection ne doivent pas polluer la lecture.
+
+------------------------------------------------------------
+ÉTAPE 3 — BARRES DE PV ET VALEURS
+Priorité : TRÈS HAUTE
+
+- animation fluide de la barre ;
+- valeur numérique stable et lisible ;
+- diminution progressive ;
+- état critique identifiable ;
+- meilleur contraste ;
+- synchronisation avec l’impact.
+
+Option recommandée : petite trace retardée de PV perdus pendant quelques dixièmes de seconde.
+
+------------------------------------------------------------
+ÉTAPE 4 — DÉGÂTS / SOINS / STATS FLOTTANTES
+Priorité : HAUTE
+
+Exemples :
+- -350 PV
+- +180 PV
+- -50 NIN
+- +10% TAI
+- -1% GEN
+
+Règles :
+- apparition au moment réel de l’effet ;
+- position stable ;
+- légère montée ;
+- disparition douce ;
+- contour / ombre pour lisibilité.
+
+Code couleur recommandé :
+- rouge : dégâts PV ;
+- vert : soin ;
+- bleu/cyan : chakra / NIN ;
+- violet : GEN / mental ;
+- or/orange : effet spécial important ;
+- gris : blocage / indisponibilité.
+
+------------------------------------------------------------
+ÉTAPE 5 — DISTINGUER LES TYPES D’ACTION
+Priorité : HAUTE
+
+Attaque normale : dash simple, impact court, feedback sobre.
+Spéciale : préparation renforcée, nom de technique brièvement affiché, impact plus marquant.
+Passif : pas forcément de dash, label PASSIF ou effet dédié, réaction locale.
+Poison / DOT : pas de déplacement de l’attaquant, réaction cible, valeur flottante.
+Soin / buff : pulse doux, glow positif, valeur positive.
+Bombe / effet différé : déclenchement local sur la cible, feedback spécifique.
+
+------------------------------------------------------------
+ÉTAPE 6 — STATUTS / BADGES / COOLDOWNS
+Priorité : HAUTE
+
+À traiter :
+- poison ;
+- contrôle ;
+- inciblable ;
+- bombe ;
+- clone ;
+- concentration chakra ;
+- cooldown spéciale ;
+- effet passif ;
+- stat réduite / buffée ;
+- KO / blessure si applicable.
+
+À faire : badges cohérents, emplacement fixe, tours restants lisibles, icônes homogènes, pas d’empilement de textes.
+
+------------------------------------------------------------
+ÉTAPE 7 — KO, REMPLACEMENT ET MOMENTS IMPORTANTS
+Priorité : MOYENNE / HAUTE
+
+KO :
+- impact final ;
+- assombrissement ;
+- badge K.O. ;
+- petite sortie / chute / retrait ;
+- remplacement propre.
+
+Remplacement : ancienne carte sort proprement, nouvelle carte entre avec animation courte, pas de téléportation brutale.
+
+Début / fin de tour : transition discrète, A1 / A2 mieux séparées visuellement.
+
+------------------------------------------------------------
+ÉTAPE 8 — BOUTONS ET ERGONOMIE MOBILE
+Priorité : HAUTE
+
+États à distinguer :
+- disponible ;
+- indisponible ;
+- sélectionné ;
+- cooldown ;
+- bloqué par une règle ;
+- action consommée ;
+- spéciale utilisable / non utilisable.
+
+À améliorer : taille tactile, contraste, espacement, contours, texte, feedback au toucher.
+
+Règle : le joueur ne doit jamais se demander si un bouton est cliquable.
+
+------------------------------------------------------------
+ÉTAPE 9 — MICRO-POLISH ET PROFONDEUR
+Priorité : MOYENNE
+
+À tester :
+- ombre propre sous les cartes ;
+- très léger relief ;
+- glow discret carte active ;
+- légère respiration des éléments importants ;
+- petit scale au press ;
+- transitions plus douces ;
+- éléments secondaires légèrement atténués pendant une attaque ;
+- focus temporaire source + cible.
+
+Tout doit rester subtil.
+
+------------------------------------------------------------
+ÉTAPE 10 — SON, IDENTITÉ ET COHÉRENCE YUGITO
+Priorité : MOYENNE mais importante pour le final
+
+Son : sélection, validation, dash, impact, spéciale, soin, poison, KO, remplacement.
+
+DA : mêmes cadres, lumières/reflets, logique de couleurs, traitement des boutons, niveau de contraste.
+
+Objectif : une personne qui voit 5 secondes du combat doit reconnaître YUGITO.
+
+============================================================
+4. ORDRE DES PROCHAINS PATCHS
+============================================================
+P1 — attaque de base définitive : timing, distance, impact, retour, flash, dégâts.
+P2 — ciblage / sélection : source, cible, nettoyage des états pendant l’attaque.
+P3 — PV et valeurs : barres animées, dégâts / soins / stats flottantes.
+P4 — typologie d’actions : normale, spéciale, passif, poison, soin.
+P5 — statuts / badges / cooldowns.
+P6 — KO / remplacement / début-fin de tour.
+P7 — ergonomie boutons / mobile.
+P8 — ombres / glow / micro-animations / profondeur.
+P9 — sons / feedback sonore.
+P10 — harmonisation complète de la DA.
+
+============================================================
+5. RÈGLES TECHNIQUES À NE PAS OUBLIER
+============================================================
+1. CardActor est la vraie carte affichée.
+2. Sur Android, le Node2D de la carte est recalculé dans _process.
+3. Les effets visuels doivent rester compatibles avec ce comportement.
+4. Ne pas supposer qu’un hook Main.gd est exécuté : privilégier les points prouvés par logs.
+5. Les dégâts réels doivent rester reliés à apply_damage / chemin réel de résolution.
+6. Toute modification .gdc doit mettre à jour assets/assets.sparsepck.
+7. Repack APK : .so en ZIP_STORED, alignement 16384 pour les .so, resources.arsc STORED aligné 4.
+8. Repack = perte du bloc de signature v2.
+9. Toujours resignature officielle après patch.
+10. Ne pas utiliser une clé de test pour une build destinée à tester Google.
+11. Certificat officiel YUGITO attendu — SHA-1 : 49:31:D4:C5:AE:80:E9:BC:D5:81:1D:88:8E:BF:31:BF:92:45:98:08
+12. Toujours vérifier la signature APK après build.
+13. Ne pas modifier le package officiel sans nécessité.
+14. Ne pas casser Google / serveur / SQL pendant un patch Battle.
+
+============================================================
+6. LOGS DIAGNOSTIC BATTLE
+============================================================
+Chemin voulu : Documents/logdiagbattle/log.txt
+
+Logs utiles :
+BATTLE_START
+CARD_SETUP
+CARD_FIRST_PROCESS
+ATTACK_START
+ATTACK_SOURCE
+ATTACK_TARGET
+ATTACK_PREP
+ATTACK_DASH
+ATTACK_IMPACT
+DAMAGE_APPLY
+DAMAGE_FLOAT
+FLASH_TRIGGER
+ATTACK_RETURN
+PASSIVE_TRIGGER
+DOT_TRIGGER
+HEAL_TRIGGER
+KO_TRIGGER
+REPLACEMENT_START
+REPLACEMENT_END
+PUBLIC_LOG_READY_MEDIASTORE
+PUBLIC_LOG_WRITE_OK
+PUBLIC_LOG_WRITE_FAIL
+
+Une build finale publique ne doit pas forcément conserver tous les logs diag.
+
+============================================================
+7. CRITÈRES DE VALIDATION
+============================================================
+Avant de valider un patch Battle :
+- aucune régression Google ;
+- APK installable par-dessus la version officielle si prévu ;
+- signature officielle vérifiée ;
+- aucun écran gris ;
+- aucun crash ;
+- aucune carte fantôme/cyan non voulue ;
+- aucun projectile réintroduit ;
+- pas de flash rouge agressif ;
+- dégâts après impact ;
+- source et cible compréhensibles ;
+- carte revient bien à sa position ;
+- plusieurs attaques restent lisibles ;
+- états et boutons fonctionnels ;
+- gameplay inchangé sauf demande explicite ;
+- logs exploitables.
+
+============================================================
+8. PRIORITÉS VISUELLES ABSOLUES
+============================================================
+1. Lisibilité de l’action
+2. Attaque de carte agréable
+3. Synchronisation impact/dégâts
+4. Ciblage clair
+5. PV propres et animés
+6. Valeurs flottantes propres
+7. Différenciation attaque/spéciale/passif
+8. États/cooldowns lisibles
+9. KO/remplacement satisfaisants
+10. Cohérence DA YUGITO
+
+============================================================
+9. CE QU’IL NE FAUT PLUS FAIRE
+============================================================
+- gros câble entre cartes ;
+- projectile universel ;
+- projectile et mouvement non synchronisés ;
+- flash rouge opaque / violent ;
+- dégâts avant l’impact ;
+- mouvement trop long qui couvre la cible ;
+- plusieurs effets sans hiérarchie ;
+- carte cyan / ghost involontaire ;
+- gros effets partout à la fois ;
+- clé de test sur une build Google ;
+- plusieurs gros systèmes modifiés en même temps sans test intermédiaire.
+
+============================================================
+10. VISION FINALE
+============================================================
+Le Battle YUGITO final doit être : rapide, propre, lisible, tactique, vivant, agréable sur mobile, cohérent, sans surcharge, avec des cartes qui semblent réellement agir, des impacts satisfaisants et une interface qui aide le joueur.
+
+Philosophie centrale :
+« L’attaque doit être racontée par la carte, l’impact et la réaction de la cible — pas par un projectile générique. »
+
+FIN DU DOCUMENT
