@@ -35,15 +35,15 @@ jobs:
           set -euo pipefail
           cat > /tmp/temp_public.pem <<'EOF'
           -----BEGIN PUBLIC KEY-----
-          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAtTOlpnYugj+TX3z0eY4v
-          OVYztrROH372QasWNI6JsAK6HwM2be51QFPxXZ2eYXh3CW8xXimK/sGSCxpFnMUF
-          7Gc2RaeGzNXo8fmnSzpNgKTI64TSf0WG90QBx6pYAYDqnGc+LihRHykAhw3mrIaF
-          +rO/cSI99ip0ET0zOgPfReVLhpgaNAWXqDmXe+UIvLNX3EuVEeu64kVNCaYi0hSj
-          kpTyqDsObUjblHoh8NsvH2fS/poWL+MQgVfv0IQS0yhGBsJE+cd+VwxHWGP4pYv4
-          IQaTCN1LpdPyKOe72QAo4XqkAFE+yb0X3iFgaxsotvl2dEw/A9RvzdOXYWDLRI8b
-          xL+6MB3FwIIL3Gi0RarwRHO2gJwbxQ9+2vFE/+4mULOzzk1ovkrJrwc7GtYarRGJ
-          Ak9Er7CDayEeVZn64x1Gr9qL4OU8cwmrGjpoqpkt9wGnw1enbBowUIK7dVKXbYVH
-          XCp8EKMJWVAR4urz+X17ga7uoMc57poCBW5VKsd9qXPDAgMBAAE=
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAvYPvdJDNF5PdEMVQlHtn
+          8e1/rJPuVFEIBGo8tngpMhz8a/mGIvFSnGSYi6G0uSN5IOHcjDGlPbNBESvbZqEo
+          yPA2sUvCQa7+V7MvvxjUAzt+VNNDb3lId/wXrpsxhr4j4zaCVHgYDRKmjz9efcQC
+          jg2aYlR/Y20Kp/bQGzKgDbr2Sldhu/2a7Wkt30dSchNJq7Gfy8S3oPIG4HmZM1pu
+          HmDFcS0fS1rCAZ/51Ey5ZVwgPyJkoIDsUKKfK6By7l67nXzVQlPAtm34kVK7132U
+          F+pGeW284/XVLFvo3vHHlcOU1hIclTcckEjevaqqoo2TzXXso9jn/78sUGcgb2GV
+          OHTnOTrjrTgX+XPdqxuEPIpO+UMwZNf2k9SLazF2cClXhJkHvP5I84yE7NWSOCme
+          6y0vT4lncDYuy0+HeKMnbfJk/KV3cIsABZRWdxzSXXu7cBBlRfIzLVnGWNr4amvc
+          Ma43HfnBbQtRkimJWrq/qvxjFQHlddTuJu50cf5qt3YDAgMBAAE=
           -----END PUBLIC KEY-----
           EOF
           openssl rand -hex 32 > /tmp/aes-pass.txt
