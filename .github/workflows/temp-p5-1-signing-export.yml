@@ -1,0 +1,55 @@
+name: Temporary P5.1 signing export
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-p5-1-signing-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore and encrypt signing material
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/YUGITO_GC_RELEASE.keystore
+          cat > /tmp/session-public.pem <<'PUB'
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA12yrMhcHOHppVqwHaQxP
+          k5Argxo6iOvKIWbdWhdMJwJak1GrI7SWznS9qqjvDd32fkJxz56zgS4Hp2cr7X1E
+          USq95Zvw2VvuXp/VXwZlUiXd3TYWsZSAyOc1CF1E0SdC5NE78uMCj7vXFb14+v3K
+          v2OuXcvEoSGipHvfjZUMreg6ORKts3Mp1FISCw4tm44MqD2oRM1Q6WWwK5gTYaLK
+          BQQhz6B0MpZ7C+62lA149zmDKW2+QPtm97x9jCkGhCgvibgpgYj0T3pBZzDV/nSI
+          ILKGAw6CYg9IYSc4DOeLVaW/MF5cRTXFMZYKsZ4IXNTYxpDR17rQ3HcsOzWCFtQa
+          k99Pl9gxmGf5f9dcB6Mv2aRJ5ezfU/5nXE33R2bRlcMWbNW6WrLepSU/RyFOOd+q
+          vLu4l6LmSiQLu+Pc5VCG64o82KpD4iRhIouyofTM9r5/BBshv4W3t66CY3nmxlWZ
+          w9PANCxGasRRwDFOMREtTvDJkUukXJDJJEu9aIE1iSEDAgMBAAE=
+          -----END PUBLIC KEY-----
+          PUB
+          openssl rand -base64 48 | tr -d '\n' > /tmp/aes-pass.txt
+          {
+            printf 'KEY_ALIAS_B64=%s\n' "$(printf '%s' "$KEY_ALIAS" | base64 -w0)"
+            printf 'KS_PASS_B64=%s\n' "$(printf '%s' "$KS_PASS" | base64 -w0)"
+            printf 'KEY_PASS_B64=%s\n' "$(printf '%s' "$KEY_PASS" | base64 -w0)"
+          } > /tmp/signing.env
+          openssl enc -aes-256-cbc -salt -pbkdf2 -pass file:/tmp/aes-pass.txt -in /tmp/YUGITO_GC_RELEASE.keystore -out /tmp/YUGITO_GC_RELEASE.keystore.enc
+          openssl enc -aes-256-cbc -salt -pbkdf2 -pass file:/tmp/aes-pass.txt -in /tmp/signing.env -out /tmp/signing.env.enc
+          openssl pkeyutl -encrypt -pubin -inkey /tmp/session-public.pem -in /tmp/aes-pass.txt -out /tmp/aes-pass.enc -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256
+      - name: Upload encrypted material
+        uses: actions/upload-artifact@v4
+        with:
+          name: p5-1-signing-encrypted
+          path: |
+            /tmp/YUGITO_GC_RELEASE.keystore.enc
+            /tmp/signing.env.enc
+            /tmp/aes-pass.enc
+          retention-days: 1
