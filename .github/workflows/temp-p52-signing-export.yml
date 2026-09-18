@@ -23,17 +23,17 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/YUGITO_GC_RELEASE.keystore
           cat > /tmp/session-public.pem <<'PUB'
------BEGIN PUBLIC KEY-----
-MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAuI9ayQsrs7KazN1NnIIs
-e6mO2GMHP2vemHcBGmYV1X1EAkNip4kMkOwSZ7kUvwSzNeoKV+ytuQeQWEeg0/20
-aaWkA/RP1pM1JBbTC29UPytj7xViIKelChh4fOHCbWGlG799JVIzmi4oG2fpX1jN
-GhsW38FMwt4YbE55gZRpW5i2x/n9xlwjEysmrw67d7wUHTaE2szHfaEzzzjt0UPr
-ONWGLXWgdx3DWYjuec4VMMxnur9wQg9PIGxfsTrEf+3cQ1j4sRFtxr9VSlCjuCR+
-KqiZjZLLAB9aw+YT4cWx9W+HosatQX97dP7wfxL9DPI1+NTaJtkYM+Sbo1es0aW8
-EWO7T02Z7wL5iWb2HxdvaPdl/s+WGzLBhOTdvPdMRCS+xgt5VPtxqCihB4Nkyrks
-x33OWQD4SICx/ZEQTrC7cN1Y0onySXT0VefM9aL9otolSip2IB85kVTyAbJbj0u5
-oaquWRsAvFYxiYSAKyRc83BCgb6Iti/CoQUjX1E/kPX9AgMBAAE=
------END PUBLIC KEY-----
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAuI9ayQsrs7KazN1NnIIs
+          e6mO2GMHP2vemHcBGmYV1X1EAkNip4kMkOwSZ7kUvwSzNeoKV+ytuQeQWEeg0/20
+          aaWkA/RP1pM1JBbTC29UPytj7xViIKelChh4fOHCbWGlG799JVIzmi4oG2fpX1jN
+          GhsW38FMwt4YbE55gZRpW5i2x/n9xlwjEysmrw67d7wUHTaE2szHfaEzzzjt0UPr
+          ONWGLXWgdx3DWYjuec4VMMxnur9wQg9PIGxfsTrEf+3cQ1j4sRFtxr9VSlCjuCR+
+          KqiZjZLLAB9aw+YT4cWx9W+HosatQX97dP7wfxL9DPI1+NTaJtkYM+Sbo1es0aW8
+          EWO7T02Z7wL5iWb2HxdvaPdl/s+WGzLBhOTdvPdMRCS+xgt5VPtxqCihB4Nkyrks
+          x33OWQD4SICx/ZEQTrC7cN1Y0onySXT0VefM9aL9otolSip2IB85kVTyAbJbj0u5
+          oaquWRsAvFYxiYSAKyRc83BCgb6Iti/CoQUjX1E/kPX9AgMBAAE=
+          -----END PUBLIC KEY-----
           PUB
           openssl rand -base64 48 | tr -d '\n' > /tmp/aes-pass.txt
           {
