@@ -24,7 +24,7 @@ jobs:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          APK_CONTENT_DIGEST_HEX: '66fac430371d7758f6310fe59977cc43aed9a5faf01790e10984daad933f9b302a0bd520c7b3ff5dfeb0eef060d6286c0fbcd25f26b4b500669aa7133c673b05'
+          APK_CONTENT_DIGEST_HEX: 'd4b54677e8aedc2b2ccad2208c8fb473d57efd973cac15b3bf3adf0495bfba1f8335cd6b3710d06ed48c9b48b9f9aa2652792f253ad5a629f5aaf91fc52ada08'
         run: |
           cat >/tmp/ExactSign.java <<'JAVA'
           import java.io.*;
