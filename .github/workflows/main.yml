@@ -1,8 +1,8 @@
-name: Temporary P5.6 exact signer
+name: Temporary P5.7 exact signer
 
 on:
   push:
-    branches: [temp-p56-sign]
+    branches: [temp-p57-sign]
     paths:
       - '.github/workflows/main.yml'
 
@@ -24,7 +24,7 @@ jobs:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          APK_CONTENT_DIGEST_HEX: 'dc066a15d552fb9a145d106e8d291020e3fa648199183eee6d849ce4eded658deb5b00e0adf51a91ca9e5e31fc91e4d7327a2e60b46b54de0274af5d733ceed2'
+          APK_CONTENT_DIGEST_HEX: '2ae074d89c21bb892c061248cd0fb1e0aa23324316f15436f463bffe1fbc55e6f0617e661d72f3a347dd888e3b623d25ccfea17bd9eb9dc7ed6c27c407354a4a'
         run: |
           cat >/tmp/ExactSign.java <<'JAVA'
           import java.io.*;
@@ -76,7 +76,7 @@ jobs:
       - name: Upload signing material
         uses: actions/upload-artifact@v4
         with:
-          name: p56-exact-signing
+          name: p57-exact-signing
           path: |
             /tmp/signed_data.bin
             /tmp/signature.bin
