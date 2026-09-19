@@ -1,0 +1,67 @@
+name: Temporary P5.14 official signature
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sign-p514-temp.yml'
+      - '.github/p514_signed_data.b64'
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/yugito.keystore
+          test -s /tmp/yugito.keystore
+
+      - name: Sign P5.14 v2 signed-data
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          base64 --decode .github/p514_signed_data.b64 > /tmp/signed_data.bin
+          cat > /tmp/SignBlob.java <<'EOF'
+          import java.io.*;
+          import java.nio.file.*;
+          import java.security.*;
+          import java.security.cert.Certificate;
+          import java.util.*;
+          public class SignBlob {
+            public static void main(String[] a) throws Exception {
+              KeyStore ks=null;
+              for (String t : new String[]{"PKCS12","JKS"}) {
+                try {
+                  KeyStore k=KeyStore.getInstance(t);
+                  try(InputStream in=new FileInputStream(a[0])){k.load(in,a[2].toCharArray());}
+                  ks=k; break;
+                } catch(Exception e) {}
+              }
+              PrivateKey pk=(PrivateKey)ks.getKey(a[1],a[3].toCharArray());
+              byte[] data=Files.readAllBytes(Paths.get("/tmp/signed_data.bin"));
+              Signature s=Signature.getInstance("SHA512withRSA");
+              s.initSign(pk); s.update(data);
+              byte[] sig=s.sign();
+              Certificate cert=ks.getCertificate(a[1]);
+              MessageDigest md=MessageDigest.getInstance("SHA-256");
+              System.out.println("P514_SIGNATURE_B64="+Base64.getEncoder().encodeToString(sig));
+              System.out.println("P514_CERT_SHA256="+HexFormat.of().formatHex(md.digest(cert.getEncoded())));
+              System.out.println("P514_SIG_LEN="+sig.length);
+            }
+          }
+          EOF
+          javac /tmp/SignBlob.java
+          java -cp /tmp SignBlob /tmp/yugito.keystore "$KEY_ALIAS" "$KS_PASS" "$KEY_PASS"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/yugito.keystore /tmp/signed_data.bin /tmp/SignBlob.java /tmp/SignBlob.class
