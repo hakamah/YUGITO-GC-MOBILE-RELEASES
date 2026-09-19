@@ -1,4 +1,4 @@
-name: Temporary P5.5 exact signer
+name: Temporary P5.6 exact signer
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          APK_CONTENT_DIGEST_HEX: 'cebd206b4d1d730435eb23e14052235093f5e01740617af32103317aae0a6a56f4606399636254a5109d97db046b8b6d36eb2256f24874b3a266d381ef5db583'
+          APK_CONTENT_DIGEST_HEX: 'dc066a15d552fb9a145d106e8d291020e3fa648199183eee6d849ce4eded658deb5b00e0adf51a91ca9e5e31fc91e4d7327a2e60b46b54de0274af5d733ceed2'
         run: |
           cat >/tmp/ExactSign.java <<'JAVA'
           import java.io.*;
@@ -76,7 +76,7 @@ jobs:
       - name: Upload signing material
         uses: actions/upload-artifact@v4
         with:
-          name: p55-exact-signing
+          name: p56-exact-signing
           path: |
             /tmp/signed_data.bin
             /tmp/signature.bin
