@@ -2,7 +2,7 @@ name: Temporary P5.6 exact signer
 
 on:
   push:
-    branches: [temp-p55-sign]
+    branches: [temp-p56-sign]
     paths:
       - '.github/workflows/main.yml'
 
