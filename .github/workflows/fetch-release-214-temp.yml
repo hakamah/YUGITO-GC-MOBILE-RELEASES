@@ -1,0 +1,28 @@
+name: Temporary fetch public 2.1.4 APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fetch-release-214-temp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download public release APK
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 \
+            'https://github.com/hakamah/YUGITO-GC-MOBILE-RELEASES/releases/download/GC-Mobile-2.1.4/YUGITO_GC_Mobile_Update_2.1.4.apk' \
+            -o YUGITO_GC_Mobile_Update_2.1.4.apk
+          sha256sum YUGITO_GC_Mobile_Update_2.1.4.apk
+      - name: Upload base APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: yugito-base-214
+          path: YUGITO_GC_Mobile_Update_2.1.4.apk
+          retention-days: 1
