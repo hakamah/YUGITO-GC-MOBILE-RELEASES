@@ -1,0 +1,84 @@
+name: Temporary P5.26 official signature
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sign-p526-temp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/yugito.keystore
+          test -s /tmp/yugito.keystore
+
+      - name: Sign P5.26 APK v2 signed-data
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CONTENT_DIGEST_HEX: "ee9acf35d4a5c1aed4f28f148a8fffb92b027561d83554a955c62875565fee09d74f435cd8b5096534d9e2e493dc6f32048cdba497f94b270073516878852954"
+        run: |
+          cat > /tmp/SignP526.java <<'EOF'
+          import java.io.*;
+          import java.nio.*;
+          import java.security.*;
+          import java.security.cert.Certificate;
+          import java.util.*;
+
+          public class SignP526 {
+            static byte[] le32(int v) {
+              return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(v).array();
+            }
+            static byte[] cat(byte[]... xs) throws Exception {
+              ByteArrayOutputStream o = new ByteArrayOutputStream();
+              for (byte[] x: xs) o.write(x);
+              return o.toByteArray();
+            }
+            static byte[] lp(byte[] x) throws Exception { return cat(le32(x.length), x); }
+            static byte[] hex(String s) {
+              byte[] out = new byte[s.length()/2];
+              for (int i=0;i<out.length;i++) out[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);
+              return out;
+            }
+            public static void main(String[] a) throws Exception {
+              KeyStore ks=null; Exception last=null;
+              for (String t : new String[]{"PKCS12","JKS"}) {
+                try {
+                  KeyStore k=KeyStore.getInstance(t);
+                  try(InputStream in=new FileInputStream(a[0])) { k.load(in,a[2].toCharArray()); }
+                  ks=k; break;
+                } catch(Exception e) { last=e; }
+              }
+              if (ks==null) throw last;
+              byte[] digest=hex(System.getenv("CONTENT_DIGEST_HEX"));
+              byte[] digestRecord=cat(le32(0x0104), lp(digest));
+              byte[] digests=lp(digestRecord);
+              Certificate cert=ks.getCertificate(a[1]);
+              byte[] certs=lp(cert.getEncoded());
+              byte[] signedData=cat(lp(digests), lp(certs), lp(new byte[0]));
+              PrivateKey pk=(PrivateKey)ks.getKey(a[1],a[3].toCharArray());
+              Signature s=Signature.getInstance("SHA512withRSA");
+              s.initSign(pk); s.update(signedData);
+              byte[] sig=s.sign();
+              MessageDigest md=MessageDigest.getInstance("SHA-256");
+              System.out.println("P526_SIGNATURE_B64="+Base64.getEncoder().encodeToString(sig));
+              System.out.println("P526_CERT_SHA256="+HexFormat.of().formatHex(md.digest(cert.getEncoded())));
+              System.out.println("P526_SIG_LEN="+sig.length);
+            }
+          }
+          EOF
+          javac /tmp/SignP526.java
+          java -cp /tmp SignP526 /tmp/yugito.keystore "$KEY_ALIAS" "$KS_PASS" "$KEY_PASS"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/yugito.keystore /tmp/SignP526.java /tmp/SignP526.class
